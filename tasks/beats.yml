@@ -13,6 +13,10 @@
 - name: Beats configuration
   include_tasks: beats-config.yml
 
+- name: include beats-security.yml
+  include: beats-security.yml
+  run_once: True
+
 # Make sure the service is started, and restart if necessary
 - name: Start {{ beat_product }} service
   become: yes
