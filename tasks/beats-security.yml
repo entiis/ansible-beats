@@ -1,0 +1,33 @@
+---
+#Security specific configuration done here
+
+- name: create the beats keystore
+  block:
+  - name: create the keystore if it doesn't exist yet
+    become: yes
+    command: >
+     {{ beats_home }}/bin/{{ beat }} keystore create --force -c {{ beats_conf_dir }}/{{ beat }}.yml --path.data {{ beats_data_dir }}
+    args:
+      creates: "{{ beats_data_dir }}/{{ beat }}.keystore"
+
+  - name: List keystore content
+    become: yes
+    command: >
+     {{ beats_home }}/bin/{{ beat }} keystore list -c {{ beats_conf_dir }}/{{ beat }}.yml --path.data {{ beats_data_dir }}
+    register: list_keystore
+    changed_when: False
+    check_mode: no
+
+  - name: Create password for beats user
+    become: yes
+    shell: echo {{ beats_es_password | quote }} | {{ beats_home }}/bin/{{ beat }} keystore add --stdin --force -c {{ beats_conf_dir }}/{{ beat }}.yml --path.data {{ beats_data_dir }} 'elasticsearch.password'
+    when:
+      - beats_es_username is defined and beats_es_password is defined and list_keystore is defined
+    no_log: true
+    notify: restart the service
+
+  - name: Add Beats keystore items
+    become: yes
+    shell: echo {{ item.value | quote }} | {{ beats_home }}/bin/{{ beat }} keystore add --stdin --force -c {{ beats_conf_dir }}/{{ beat }}.yml --path.data {{ beats_data_dir }} {{ item.key | quote }}
+    when: beats_keystore_items is defined and (beats_keystore_items | length > 0)
+    with_dict: "{{ beats_keystore_items }}"
