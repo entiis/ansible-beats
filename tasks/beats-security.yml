@@ -31,3 +31,5 @@
     shell: echo {{ item.value | quote }} | {{ beats_home }}/bin/{{ beat }} keystore add --stdin --force -c {{ beats_conf_dir }}/{{ beat }}.yml --path.data {{ beats_data_dir }} {{ item.key | quote }}
     when: beats_keystore_items is defined and (beats_keystore_items | length > 0)
     with_dict: "{{ beats_keystore_items }}"
+    no_log: true
+    notify: restart the service
